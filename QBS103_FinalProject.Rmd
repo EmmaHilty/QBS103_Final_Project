@@ -1,0 +1,89 @@
+---
+title: "Final Project"
+author: "Emma Hilty"
+date: "2024-07-25"
+output: pdf_document
+---
+
+Setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Libraries
+```{r}
+# Load/install libraries
+library(ggplot2)
+```
+
+
+Set working directory and read in data
+```{r}
+# Set working directory
+  setwd("/Users/emmahilty/Library/Mobile Documents/com~apple~CloudDocs/QBS 103/Project")
+
+# Read in data
+  gene_ex <- read.csv('QBS103_GSE157103_genes.csv') # gene expression data
+
+  metadata <- read.csv('QBS103_GSE157103_series_matrix.csv') # gene metadata
+```
+
+Switch rows and columns in the gene_ex dataframe
+Sources: 
+  DataCamp. https://www.datacamp.com/tutorial/data-reshaping-in-r
+  StackOverflow. https://stackoverflow.com/questions/33643181/how-do-i-flip-rows-and-columns-in-r
+```{r}
+# First, create a new dataframe and transpose it (except for the first column).
+gene_ex2 <- data.frame(t(gene_ex[-1]))
+
+# Now assign new column names using the gene names previously in Column 1.
+colnames(gene_ex2) <- gene_ex[, 1]
+
+# Should have 126 observations of 100 variables (Note: the number of observations decreased by 1 because Column 1 became the names for the columns).
+```
+
+Explore the data to identify:
+  1. one gene
+  2. one continuous
+  3. two categorical covariates
+```{r}
+# Gene = AACS
+str(gene_ex2$AACS)
+
+# Continuous variable = Age
+str(metadata$age)
+
+# First categorical variable = Disease Status
+str(metadata$disease_status)
+table(metadata$disease_status)
+
+# Second categorical variable = icu_status
+str(metadata$icu_status)
+table(metadata$icu_status)
+```
+
+Create a new dataframe that includes gene expression for AACS, age, disease status and ICU status
+```{r}
+# Make a new dataframe with participant ID and gene AACS
+dat <- gene_ex2 %>%
+  select()
+# PROBLEM: SOMETHING WEIRD HAPPENED WITH THE FIRST COLUMN OF gene_ex2
+
+```
+
+
+Create a histogram showing gene expression for AACS
+```{r}
+hist(gene_ex2$AACS, xlab = 'Gene AACS Expression', main = 'Histogram of AACS Gene Expression')
+```
+
+Scatterplot of gene expression and age
+```{r}
+ggplot()
+```
+
+Boxplot of gene expression separated by both categorical covariates
+```{r}
+
+```
+
