@@ -14,6 +14,8 @@ Libraries
 ```{r}
 # Load/install libraries
 library(ggplot2)
+library(tidyr)
+library(dplyr)
 ```
 
 
@@ -23,7 +25,8 @@ Set working directory and read in data
   setwd("/Users/emmahilty/Library/Mobile Documents/com~apple~CloudDocs/QBS 103/Project")
 
 # Read in data
-  gene_ex <- read.csv('QBS103_GSE157103_genes.csv') # gene expression data
+  gene_ex <- read.csv('QBS103_GSE157103_genes.csv', header = FALSE) # gene expression data
+      # header = false, so that it is shown as a column for participant ID after it is transposed
 
   metadata <- read.csv('QBS103_GSE157103_series_matrix.csv') # gene metadata
 ```
@@ -34,18 +37,22 @@ Sources:
   StackOverflow. https://stackoverflow.com/questions/33643181/how-do-i-flip-rows-and-columns-in-r
 ```{r}
 # First, create a new dataframe and transpose it (except for the first column).
-gene_ex2 <- data.frame(t(gene_ex[-1]))
+  gene_ex2 <- data.frame(t(gene_ex[-1]))
 
 # Now assign new column names using the gene names previously in Column 1.
-colnames(gene_ex2) <- gene_ex[, 1]
+  colnames(gene_ex2) <- gene_ex[, 1]
+  
+# change the name of the first column in gene_ex2
+# Reference: Stack Overflow. https://stackoverflow.com/questions/29279994/how-to-name-first-unnamed-column-header-of-a-data-frame-in-r
+ colnames(gene_ex2)[1]<-"participant_id"
 
 # Should have 126 observations of 100 variables (Note: the number of observations decreased by 1 because Column 1 became the names for the columns).
 ```
 
 Explore the data to identify:
-  1. one gene
-  2. one continuous
-  3. two categorical covariates
+  1. one gene = AACS
+  2. one continuous = Age
+  3. two categorical covariates = disease status, icu status
 ```{r}
 # Gene = AACS
 str(gene_ex2$AACS)
@@ -63,27 +70,84 @@ table(metadata$icu_status)
 ```
 
 Create a new dataframe that includes gene expression for AACS, age, disease status and ICU status
+Reference: Geeks for Geeks. https://www.geeksforgeeks.org/how-to-merge-data-in-r-using-r-merge-dplyr-or-data-table/
 ```{r}
-# Make a new dataframe with participant ID and gene AACS
+# Make a new dataframe with participant ID and gene ABCC1
 dat <- gene_ex2 %>%
-  select()
-# PROBLEM: SOMETHING WEIRD HAPPENED WITH THE FIRST COLUMN OF gene_ex2
+  select(participant_id, ABCC1)
 
+# Make a new dataframe with only participant ID, disease status and ICU status
+dat2 <- metadata %>%
+  select(participant_id, age, disease_status, icu_status)
+
+# Merge data for gene_ex2 and metadata
+dat3 <- left_join(dat, dat2, by = 'participant_id')
+
+# check
+str(dat3)
+```
+
+Convert between data types
+```{r}
+# Convert ABCC1 to numeric data type
+dat3$ABCC1 <- as.numeric(dat3$ABCC1)
+
+# Convert Age to numeric data type
+dat3$age <- as.numeric(dat3$age)
+```
+
+Create a theme to use for the box plot
+```{r}
+# Define our own theme
+newTheme <- theme(
+        # Remove all the extra borders and grid lines
+          panel.border = element_blank(), panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(), 
+        # Define my axis
+          axis.line = element_line(colour = "black", linewidth = rel(1)),
+        # Set plot background
+          plot.background = element_rect(fill = "white"),
+          panel.background = element_blank(),
+          legend.key = element_rect(fill = 'white'), 
+        # Move legend
+          legend.position = 'top')
 ```
 
 
 Create a histogram showing gene expression for AACS
+Reference: Data Camp. https://www.datacamp.com/tutorial/make-histogram-ggplot2
 ```{r}
-hist(gene_ex2$AACS, xlab = 'Gene AACS Expression', main = 'Histogram of AACS Gene Expression')
+ggplot(dat3, aes(x = ABCC1)) +
+  geom_histogram() + 
+  labs(x = 'Gene ABCC1', y = 'Frequency', title = 'Histogram of ABCC1 Gene Expression') + 
+  theme_classic()
 ```
 
 Scatterplot of gene expression and age
+Reference: Professor Muse's Lecture Notes. 
 ```{r}
-ggplot()
+# Generate scatter plot using theme created above
+  ggplot(dat3,aes(x = age,y = ABCC1)) + 
+  # Add points to the scatter plot
+    geom_point(color = 'darkgreen') +
+  # Change labels
+    labs(x = 'Age (years)',y = 'Frequecny of Gene ABCC1') +
+  # Add title  
+    ggtitle('Relationship Between Age and Gene Expression Among Adult Patients') +
+  # Set theme
+    newTheme
+
 ```
 
 Boxplot of gene expression separated by both categorical covariates
 ```{r}
-
+ggplot(dat3, aes(x = icu_status, y = ABCC1, color = disease_status)) + 
+  # generate a box plot
+    geom_boxplot() +
+  # Change labels
+    labs(x = 'ICU Status', y = 'ABCC1 Gene Expression', color = 'Disease Status') +
+    scale_color_manual(labels = c('COVID-19', 'non-COVID-19'), values = c('darkgreen', 'grey50')) +
+  # Set the theme
+    newTheme
 ```
 
