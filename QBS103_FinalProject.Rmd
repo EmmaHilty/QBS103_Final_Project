@@ -97,6 +97,7 @@ dat3$age <- as.numeric(dat3$age)
 ```
 
 Create a theme to use for the box plot
+Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/68214
 ```{r}
 # Define our own theme
 newTheme <- theme(
@@ -124,7 +125,7 @@ ggplot(dat3, aes(x = ABCC1)) +
 ```
 
 Scatterplot of gene expression and age
-Reference: Professor Muse's Lecture Notes. 
+Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/68214
 ```{r}
 # Generate scatter plot using theme created above
   ggplot(dat3,aes(x = age,y = ABCC1)) + 
@@ -140,6 +141,7 @@ Reference: Professor Muse's Lecture Notes.
 ```
 
 Boxplot of gene expression separated by both categorical covariates
+Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/68214
 ```{r}
 ggplot(dat3, aes(x = icu_status, y = ABCC1, color = disease_status)) + 
   # generate a box plot
