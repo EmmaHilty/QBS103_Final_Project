@@ -12,12 +12,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Libraries
 ```{r}
-# Load/install libraries
-library(ggplot2)
 library(tidyr)
+library(ggplot2)
 library(dplyr)
+# install.packages("pheatmap")
+library(pheatmap)
+# install.packages("table1")
+library(table1)
 ```
-
+# Submission 1
 
 Set working directory and read in data
 ```{r}
@@ -73,8 +76,9 @@ Create a new dataframe that includes gene expression for AACS, age, disease stat
 Reference: Geeks for Geeks. https://www.geeksforgeeks.org/how-to-merge-data-in-r-using-r-merge-dplyr-or-data-table/
 ```{r}
 # Make a new dataframe with participant ID and gene ABCC1
+# Add genes A2M and A4GNT for Submission 2
 dat <- gene_ex2 %>%
-  select(participant_id, ABCC1)
+  select(participant_id, ABCC1, A2M, A4GNT)
 
 # Make a new dataframe with only participant ID, disease status and ICU status
 dat2 <- metadata %>%
@@ -97,7 +101,6 @@ dat3$age <- as.numeric(dat3$age)
 ```
 
 Create a theme to use for the box plot
-Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/68214
 ```{r}
 # Define our own theme
 newTheme <- theme(
@@ -125,12 +128,12 @@ ggplot(dat3, aes(x = ABCC1)) +
 ```
 
 Scatterplot of gene expression and age
-Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/68214
+Reference: Professor Muse's Lecture Notes. 
 ```{r}
 # Generate scatter plot using theme created above
   ggplot(dat3,aes(x = age,y = ABCC1)) + 
   # Add points to the scatter plot
-    geom_point(color = 'darkgreen') +
+    geom_point(color = "darkgreen") +
   # Change labels
     labs(x = 'Age (years)',y = 'Frequecny of Gene ABCC1') +
   # Add title  
@@ -141,15 +144,271 @@ Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/
 ```
 
 Boxplot of gene expression separated by both categorical covariates
-Reference: Professor Muse's Lecture Notes. https://canvas.dartmouth.edu/courses/68214
 ```{r}
 ggplot(dat3, aes(x = icu_status, y = ABCC1, color = disease_status)) + 
   # generate a box plot
     geom_boxplot() +
   # Change labels
-    labs(x = 'ICU Status', y = 'ABCC1 Gene Expression', color = 'Disease Status') +
+    labs(x = 'ICU Admission?', y = 'ABCC1 Gene Expression', color = 'Disease Status') +
     scale_color_manual(labels = c('COVID-19', 'non-COVID-19'), values = c('darkgreen', 'grey50')) +
   # Set the theme
-    newTheme
+    newTheme +
+  # Add a title
+    ggtitle("Relationship between ICU admisssion and gene expression by\ndisease status")
+```
+
+
+
+***
+# Submission 2
+
+Build a function to create the plots you made for Presentation 1, incorporating any feedback you received on your submission. Your functions should take the following input: 
+    (1) the name of the data frame
+    (2) a list of 1 or more gene names
+    (3) 1 continuous covariate
+    (4) two categorical covariates
+    
+Select 2 additional genes (for a total of 3 genes) to look at and implement a loop to generate your figures using the function you created.
+
+Make the values for genes numeric     
+```{r}
+# make the genes numeric data type
+dat3$ABCC1 <- as.numeric(dat3$ABCC1)
+dat3$A2M <- as.numeric(dat3$A2M)
+dat3$ A4GNT <- as.numeric(dat3$A4GNT)
+```
+
+Reference: Professor Muse. Data Visualization lecture.
+Reference: Professor Kosarek. Data Analytics lecture.
+https://canvas.dartmouth.edu/courses/68214
+
+Graham Schultz: Graham helped troubleshoot errors in my code, including explaining how/why to add the list of genes as a second operator within the function. 
+He also helped me move the for loop and when to specify 'dat3' and 'genes' within the function.
+Additionally, Graham helped spot a few additional parentheses within the code.
+
+```{r}
+# Create a list of column names for the genes we want to create plots for
+genes = list('ABCC1', 'A2M', 'A4GNT')
+
+# Start the function to get plots for each gene listed in 'genes'
+build_plots <- function(dat3, genes) {
+  
+# Loop through the graphs for each gene
+  for(i in genes) {
+
+# Plot the histograms for each gene
+  # Plot 1 = Histogram of gene expression
+    plot1 <- ggplot(dat3, aes(x = dat3[,i])) +
+      # Plot the histogram
+      geom_histogram() +
+      # Change labels
+      labs(y = 'Frequency', title = 'Histogram of Gene Expression') +
+      # Change the theme
+      theme_classic()
+  
+  # Plot 2: Scatterplot of gene expression vs age
+    plot2 <- ggplot(dat3, aes(x = age, y = dat3[,i])) + 
+      # Plot the scatterplot and set the point color
+          geom_point(color = 'darkgreen') +
+      # Change the labels
+          labs(x = 'Age (years)', 
+             title = 'Relationship between age and gene expression among adults') +
+      # Change the theme
+          theme_classic()
+    
+  # Plot 3: Box plot of ICU Status and ABCC1 Gene Expression by Disease Status
+    plot3 <- ggplot(dat3, aes(x = icu_status, y = dat3[,i], color = disease_status)) +
+      # Make the box plot
+        geom_boxplot() +
+      # Change the labels
+        labs(x = 'ICU Status', color = 'Disease Status') +
+      # Change the colors
+        scale_color_manual(labels = c('COVID-19', 'non-COVID-19'), 
+                             values = c('darkgreen', 'gray50')) +
+      # Change the theme
+        theme_classic()
+  
+    # Print the plots for each gene    
+      print(plot1)
+      print(plot2)
+      print(plot3)
+    }  
+ }
+
+# Run the function  
+# Note: add genes as a second parameter to the function
+build_plots(dat3, genes)
+```
+
+***
+# Submission 3
+
+1. Generate a table of summary statistics for 3 continuous variables mean(SD) and 3 categorical variables (n(%)) stratified by one of the categorical variables.
+Reference: Einstein Med. https://einsteinmed.edu/uploadedfiles/centers/ictr/new/p3-r4-table-1-package-in-r.pdf
+```{r}
+# Make age and fibrinogen numeric variables
+  metadata$age <- as.numeric(metadata$age)
+  metadata$fibrinogen <- as.numeric(metadata$fibrinogen)
+
+# Change data type to factor and change the names of the levels
+  metadata$disease_status <- as.factor(metadata$disease_status)
+    levels(metadata$disease_status) <- c("COVID-19", "Non-COVID-19")
+  metadata$sex <- as.factor(metadata$sex)
+    levels(metadata$sex) <- c("Female", "Male", "Unknown")
+  metadata$icu_status <- as.factor(metadata$icu_status)
+    levels(metadata$icu_status) <- c("No", "Yes")
+  
+# Label variables
+  label(metadata$age) <- "Age (years)"
+  label(metadata$sex) <- "Sex"
+  label(metadata$icu_status) <- "ICU Status"
+  label(metadata$disease_status) <- "Disease Status"
+  label(metadata$ventilator.free_days) <- "Ventilator Free Days"
+  label(metadata$fibrinogen) <- "Fibrinogen (mg/dL)"
+  
+# Create a caption
+  caption = "Table 1. Characteristics of patients according to COVID-19 diagnosis"
+  
+# Create the table of summary statistics
+table1(~age + sex + icu_status + ventilator.free_days + fibrinogen | disease_status, data = metadata, overall = F, render.continuous = c("Mean (SD)"), caption = caption)
+```
+
+
+
+2. Generate a heatmap (5 pts)
+  o	Heatmap should include at least 10 genes
+  o	Include tracking bars for the 2 categorical covariates in your boxplot **HELP
+  o	Heatmaps should include clustered rows and columns
+
+Start by creating a dataframe with the needed variables.
+```{r}
+# Start by creating a subset of 10 genes and the categorical covariates (disease status and icu status)
+  genes_10 <- gene_ex2 %>%
+    select(participant_id, ABCC1, A2M, A4GNT, A3GALT2, AACS, AARS2, AADAT, AAK1, AAMP, AAR2)
+
+# Make the values numeric
+  genes_10$ABCC1 <- as.numeric(genes_10$ABCC1)
+  genes_10$A2M <- as.numeric(genes_10$A2M)
+  genes_10$A4GNT <- as.numeric(genes_10$A4GNT)
+  genes_10$A3GALT2 <- as.numeric(genes_10$A3GALT2)
+  genes_10$AACS <- as.numeric(genes_10$AACS)
+  genes_10$AARS2 <- as.numeric(genes_10$AARS2)
+  genes_10$AADAT <- as.numeric(genes_10$AADAT)
+  genes_10$AAK1 <- as.numeric(genes_10$AAK1)
+  genes_10$AAMP <- as.numeric(genes_10$AAMP)
+  genes_10$AAR2 <- as.numeric(genes_10$AAR2)
+
+# Merge data for genes and metadata(with categorical variables)
+genes_cat <- left_join(genes_10, dat2, by = 'participant_id')
+
+#genes_10$participant_id <- seq(1:126)
+
+# Make the row names the participant ID
+rownames(genes_10) <- genes_cat$participant_id
+
+# drop the participant ID column
+genes_10 <- genes_10 %>%
+  select(-participant_id)
+
+
+# Check
+head(genes_10)
+
+# drop participant ID
+#genes_10 <- genes_10 %>%
+#  select(-participant_id)
+```
+
+Now calculate the variances (for the heatmap)
+```{r}
+# Calculate the variance
+variance <- apply(Filter(is.numeric, genes_10), MARGIN = 1, FUN = var)
+
+# Order the rows so that the highest variance is at the top
+genes_10.2 <- genes_10[order(variance, decreasing = T),]
+```
+
+Now generate the heatmap
+Reference: Professor Muse's Data Analytics Lecture. https://canvas.dartmouth.edu/courses/68214
+Reference for heatmap: Biostats. https://biostatsquid.com/step-by-step-heatmap-tutorial-with-pheatmap/
+```{r}
+# Make disease status a factor
+  genes_cat$disease_status <- as.factor(genes_cat$disease_status)
+    levels(genes_cat$disease_status) <- c("COVID-19", "non-COVID-19")
+# Make ICU status a factor
+  genes_cat$icu_status <- as.factor(genes_cat$icu_status)
+    levels(genes_cat$icu_status) <- c("No", "Yes")
+
+# Change the column names
+# Reference: Stack Overflow. https://sparkbyexamples.com/r-programming/rename-column-in-r/
+  genes_cat <- genes_cat %>%
+    rename("Disease" = "disease_status")
+  genes_cat <- genes_cat %>%
+    rename("ICU" = "icu_status")
+  
+# Thank you Graham Schultz, David Kook and Professor Muse for helping me figure out what to do for the annotation data and colors.
+# Define categorical covariates for tracking bar (disease and ICU status)
+  annotationData <- genes_cat %>%
+    select(Disease, ICU)
+# Make participant ID the row names for annotationData
+  rownames(annotationData) <- genes_cat$participant_id
+    
+# Create a color scheme for the annotationData labels
+# Reference for colors: R Color Cheatsheet. https://www.nceas.ucsb.edu/sites/default/files/2020-04/colorPaletteCheatsheet.pdf
+  colorsList <- list(Disease = c("COVID-19" = "hotpink", "non-COVID-19" = "lightpink"), 
+                     ICU = c("Yes" = "palegreen", "No" = "lightseagreen"))
+  
+# Make genes_10.2 a matrix for the heatmap
+  genes_10m <- as.matrix(genes_10.2)
+
+# Thank you Professor Muse for helping me fix the sequence of errors on the heat map due to the row names not matching on the matrix (genes_10m) and annotationData.
+# Generate the heatmap
+pheatmap(genes_10m,
+  # Cluster the rows and columns
+    cluster_rows = T,
+    cluster_cols = T,
+  # Apply euclidean clustering to rows and columns
+    clustering_distance_rows = "euclidean",
+    clustering_distance_cols = "euclidean",
+  # Add the annotation row (disease and ICU status)
+    annotation_row = annotationData,
+  # Add the colors for the annotation row
+    annotation_colors = colorsList,
+  # Hide the rownames
+    show_rownames = F,
+  # Remove borders
+    border_color = NA,
+  # Remove labels on the annotation columns
+    annotation_names_row = F)
+```
+
+3. Going through the documentation for ggplot2, generate a plot type that we did not previously discuss in class that describes your data in a new and unique way 
+
+Generate dotplots!
+Reference for dotplot: Bioinformatics. https://uclouvain-cbio.github.io/WSBIM1322/sec-vis.html
+Reference for colors of dotplot: R Color Cheatsheet. https://www.nceas.ucsb.edu/sites/default/files/2020-04/colorPaletteCheatsheet.pdf
+```{r}
+# Get started by specifying the dataset and variables
+ggplot(data = dat3, aes(x = icu_status, y = ABCC1, fill = disease_status)) +
+  # Make a dot plot
+  geom_dotplot(
+    # Set the axis for the bins along the y axis          
+      binaxis = "y",
+    # Specify the bin width, here 1/5 the range of the data
+      binwidth = 1/5,
+    # Set the direction to stack the dots
+      stackdir = "center",
+    # How close together to stack the dots (decrease value to let dots overlap)
+      stackratio = 1,
+    # Specify color
+      aes(fill = disease_status)) +
+    # Change labels
+      labs(x = "ICU Admission", y = "Gene Expression for ABCC1", 
+           fill = "Diagnosis", title = "Gene expression of ABCC1 by ICU admission and COVID-19 diagnosis") +
+    # Change colors
+      scale_fill_manual(labels = c("COVID-19", "non-COVID-19"),
+                        values = c("mediumorchid", "palegreen2")) +
+    # Change theme
+      theme_classic()
 ```
 
